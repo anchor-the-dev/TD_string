@@ -1,4 +1,5 @@
 .venv
+src/td_string/__pycache__/
 uv.lock
 dist
 .python-version

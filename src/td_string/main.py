@@ -3,7 +3,6 @@ import unicodedata
 from pathlib import Path
 import jsonlines
 
-# TinyDuck by dduckling
 
 class TD_string:
     def __init__(self, st=None, byt=None, table_path=None, table="cs"):
@@ -26,7 +25,37 @@ class TD_string:
         if byt is not None:
             self.load_bytes(byt)
         
+    def show(self):
+        upper = False
+        second = False
+        for i in self.btuple:
+            code = int(i, 2)
+            if code == 31:
+                upper = True
+                print("#S", end="    ")
+                continue
+            if code == 30:
+                second = True
+                print("#H", end="    ")
+                continue
 
+            if second:
+                second = False
+                s = self.table[1][code]
+            else:
+                s = self.table[0][code]
+
+            if upper:
+                upper = False
+                if s is not None:
+                    s = s.upper()
+
+            if s is None:
+                print("·", end=" " * (6 - 1))
+            else:
+                print(s, end=" " * (6 - len(s)))
+        print()
+            
     def load_bytes(self, b):
         bit_str = "".join(f"{x:08b}" for x in b) 
         st = ""
@@ -83,7 +112,7 @@ class TD_string:
 
         n = len(self.btuple)*5 
         d = 8 - (n % 8)
-        if d == 0:
+        if d == 8:
             d = 0
 
         self.td = "".join([str(x) for x in self.btuple])
@@ -101,15 +130,20 @@ class TD_string:
         if not path.exists():
             print(f"Table {path} does not exist.")
             sys.exit(1)
-
         set1 = []
         set2 = []
         with jsonlines.open(path) as f:
             for row in f:
                 if "1" in row:
-                    set1.extend(row["1"])
+                    val1 = row["1"]
+                    set1.append(val1)
+                else:
+                    set1.append(None)
                 if "2" in row:
-                    set2.extend(row["2"])
+                    val2 = row["2"]
+                    set2.append(val2 if val2 != "" else None)
+                else:
+                    set2.append(None)
         self.table = (tuple(set1), tuple(set2))
 
     def _text2ascii(self, text):
@@ -117,8 +151,6 @@ class TD_string:
         ascii_text = "".join(c for c in normalized if unicodedata.category(c) != 'Mn')
         return ascii_text
     
-        
-
     def letter2numbers(self, i):
         r = None
         if i.isupper():
@@ -146,6 +178,7 @@ class TD_string:
             raise TypeError("Indices must be integers, not str")
 
         return self.btuple[key]
+
 if __name__=="__main__":
     string = "ABCDEFGHIJKLMOPQRSTUVWXYZabcdefghijklmopqrstuvwxyz123456890"
     i = TD_string(string)

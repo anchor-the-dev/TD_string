@@ -7,7 +7,7 @@ license = {text = "AGPL-3.0"}
 authors = [
     {name = "anchor-the-dev", email = "matyytam@duck.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.9"
 dependencies = ["jsonlines"]
 
 classifiers = [ 
