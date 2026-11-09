@@ -6,20 +6,70 @@ import jsonlines
 # TinyDuck by dduckling
 
 class TD_string:
-    def __init__(self, st=None, byt=None, table="cs"):
+    def __init__(self, st=None, byt=None, table_path=None, table="cs"):
+        """
+        If table_path is not None it will have higher priority then table.
+        """
         if st is None and byt is None:
             print("No vallue asigned")
             sys.exit(1)
+        if table_path is None: 
+            self.table_load(Path(__file__).parent / "tables" / f"{table}.jsonl")
+        else:
+            self.table_load(Path(table))
+
         if st is not None:
             self.rawstring = st
             self.string = self._text2ascii(st)
-        self.table_load(table)
+            self.load_string(st)
+        
+        if byt is not None:
+            self.load_bytes(byt)
+        
+
+    def load_bytes(self, b):
+        bit_str = "".join(f"{x:08b}" for x in b) 
+        st = ""
+        upper = False
+        second = False
+         
+        p = len(bit_str) // 5
+        for i in range(p):
+            current = bit_str[i * 5 : (i + 1) * 5]
+            if not current or len(current) < 5:
+                break
+            cislo = int(current, 2)
+
+            if cislo == 31:
+                upper = True
+                continue
+            if cislo == 30:
+                second = True
+                continue
+
+
+            if second:
+                second = False
+                s = self.table[1][cislo]
+            else:
+                s = self.table[0][cislo]
+            
+            if upper:
+                upper = False 
+                s = s.upper()
+            st = st + s
+                        
+            
+            
         self.load_string(st)
+        
+
 
     def load_string(self, s):
         """
         load the bits and int tupple from string
         """
+        self.string = s
         self.intuple = []
         self.btuple = []
         for i in s:
@@ -34,13 +84,20 @@ class TD_string:
         n = len(self.btuple)*5 
         d = 8 - (n % 8)
         if d == 0:
-            d == 0
-        self.bytes = "".join([str(x) for x in self.btuple])
-        self.bstr = self.bytes + "0" * d        
-        self.bytes = bytes(self.intuple)
+            d = 0
 
-    def table_load(self, table):
-        path = Path(f"./tables/{table}.jsonl")
+        self.td = "".join([str(x) for x in self.btuple])
+        self.bstr = self.td + "1" * d        
+
+        byte_array = bytearray()
+        for i in range(0, len(self.bstr), 8):
+            byte_chunk = self.bstr[i:i+8]
+            byte_array.append(int(byte_chunk, 2))
+        self.bytes = bytes(byte_array)
+
+
+    def table_load(self, path):
+        path = Path(path)
         if not path.exists():
             print(f"Table {path} does not exist.")
             sys.exit(1)
@@ -89,9 +146,11 @@ class TD_string:
             raise TypeError("Indices must be integers, not str")
 
         return self.btuple[key]
+if __name__=="__main__":
+    string = "ABCDEFGHIJKLMOPQRSTUVWXYZabcdefghijklmopqrstuvwxyz123456890"
+    i = TD_string(string)
+    print(i)
+    print(f"Počet bitů - TD    {len(i)*5}")
+    print(f"Počet bitů - ASCII {len(i)*8}")
+    print(f"TD je o {100- (len(i)*5/(len(i)*8/100))}% menší")
 
-
-
-i = TD_string("Ahoj jak se mas")
-print(i)
-print(i.bytes)
